@@ -10,7 +10,7 @@
 #include <boost/foreach.hpp>
 #include <boost/tokenizer.hpp>
 #include <python2.7/Python.h>
-#include <python2.7/site-packages/numpy/core/include/numpy/arrayobject.h>
+#include <python2.7/dist-packages/numpy/core/include/numpy/arrayobject.h>
 #include <eigen3/Eigen/Dense>
 // standard headers
 #include <string>
@@ -116,6 +116,7 @@ int main(int argc, char* argv[]) {
     tk(vm["data"].as<std::string>(),
        boost::char_separator<char>(",[] "));
   std::map<std::string,PyObject*> dictMap;
+  Eigen::VectorXd Pt, thetaB, phiB;
   BOOST_FOREACH (const std::string& t, tk) {
     if (t == "B" || t == "Bx" || t == "Br" || t == "By" || t == "Bt" ||
         t == "Bz" || t == "Bn") {
@@ -125,31 +126,147 @@ int main(int argc, char* argv[]) {
         PyArray_SimpleNewFromData(1, pDataDim, PyArray_DOUBLE,
           const_cast<double*>(tsMain.col(0).data())));
       PyDict_SetItemString(dictMap[t], "factor", PyFloat_FromDouble(1));
-    }
-    if (t == "B") {
-      npy_intp pDataDim[] = {tsMain.col(1).size()};
+      if (t == "B") {
+        npy_intp pDataDim[] = {tsMain.col(1).size()};
+        PyDict_SetItemString(dictMap[t], "y",
+          PyArray_SimpleNewFromData(1, pDataDim, PyArray_DOUBLE,
+            const_cast<double*>(tsMain.col(1).data())));
+      } else if (t == "Bx" || t == "Br") {
+        npy_intp pDataDim[] = {tsMain.col(2).size()};
+        PyDict_SetItemString(dictMap[t], "y",
+          PyArray_SimpleNewFromData(1, pDataDim, PyArray_DOUBLE,
+            const_cast<double*>(tsMain.col(2).data())));
+      } else if (t == "By" || t == "Bt") {
+        npy_intp pDataDim[] = {tsMain.col(3).size()};
+        PyDict_SetItemString(dictMap[t], "y",
+          PyArray_SimpleNewFromData(1, pDataDim, PyArray_DOUBLE,
+            const_cast<double*>(tsMain.col(3).data())));
+      } else if (t == "Bz" || t == "Bn") {
+        npy_intp pDataDim[] = {tsMain.col(4).size()};
+        PyDict_SetItemString(dictMap[t], "y",
+          PyArray_SimpleNewFromData(1, pDataDim, PyArray_DOUBLE,
+            const_cast<double*>(tsMain.col(4).data())));
+      }
+    } else if (t == "Vp" || t == "Vx" || t == "Vr" || t == "Vy" || t == "Vt" ||
+               t == "Vz" || t == "Vn" || t == "Vth") {
+      dictMap[t] = PyDict_New();
+      npy_intp pDataDim[] = {tsMain.col(0).size()};
+      PyDict_SetItemString(dictMap[t], "t",
+        PyArray_SimpleNewFromData(1, pDataDim, PyArray_DOUBLE,
+          const_cast<double*>(tsMain.col(0).data())));
+      PyDict_SetItemString(dictMap[t], "factor", PyFloat_FromDouble(1));
+      if (t == "Vp") {
+        npy_intp pDataDim[] = {tsMain.col(5).size()};
+        PyDict_SetItemString(dictMap[t], "y",
+          PyArray_SimpleNewFromData(1, pDataDim, PyArray_DOUBLE,
+            const_cast<double*>(tsMain.col(5).data())));
+      } else if (t == "Vx" || t == "Vr") {
+        npy_intp pDataDim[] = {tsMain.col(6).size()};
+        PyDict_SetItemString(dictMap[t], "y",
+          PyArray_SimpleNewFromData(1, pDataDim, PyArray_DOUBLE,
+            const_cast<double*>(tsMain.col(6).data())));
+      } else if (t == "Vy" || t == "Vt") {
+        npy_intp pDataDim[] = {tsMain.col(7).size()};
+        PyDict_SetItemString(dictMap[t], "y",
+          PyArray_SimpleNewFromData(1, pDataDim, PyArray_DOUBLE,
+            const_cast<double*>(tsMain.col(7).data())));
+      } else if (t == "Vz" || t == "Vn") {
+        npy_intp pDataDim[] = {tsMain.col(8).size()};
+        PyDict_SetItemString(dictMap[t], "y",
+          PyArray_SimpleNewFromData(1, pDataDim, PyArray_DOUBLE,
+            const_cast<double*>(tsMain.col(8).data())));
+      } else if (t == "Vth") {
+        npy_intp pDataDim[] = {tsMain.col(12).size()};
+        PyDict_SetItemString(dictMap[t], "y",
+          PyArray_SimpleNewFromData(1, pDataDim, PyArray_DOUBLE,
+            const_cast<double*>(tsMain.col(12).data())));
+      }
+    } else if (t == "Pth" || t == "Pt") {
+      dictMap[t] = PyDict_New();
+      npy_intp pDataDim[] = {tsMain.col(0).size()};
+      PyDict_SetItemString(dictMap[t], "t",
+        PyArray_SimpleNewFromData(1, pDataDim, PyArray_DOUBLE,
+          const_cast<double*>(tsMain.col(0).data())));
+      PyDict_SetItemString(dictMap[t], "factor", PyFloat_FromDouble(1));
+      if (t == "Pth") {
+        npy_intp pDataDim[] = {tsMain.col(9).size()};
+        PyDict_SetItemString(dictMap[t], "y",
+          PyArray_SimpleNewFromData(1, pDataDim, PyArray_DOUBLE,
+            const_cast<double*>(tsMain.col(9).data())));
+      } else if (t == "Pt") {
+        npy_intp pDataDim[] = {tsMain.col(10).size()};
+        double Te = 130000; // K
+        double kb = 1.380648e-23; // J/K
+        double mu0 = 1.256637e-6; // N/A^2
+        Pt = ((tsMain.col(1)*1e-9).array().pow(2).matrix()/2/mu0+
+             (tsMain.col(10)*1e6)*kb*Te+
+             ((tsMain.col(10)*1e6).array()*0.96*kb*tsMain.col(11).array()).matrix()+
+             ((tsMain.col(10)*1e6).array()*0.04*kb*tsMain.col(11).array()*4).matrix())*1e9;
+        PyDict_SetItemString(dictMap[t], "y",
+          PyArray_SimpleNewFromData(1, pDataDim, PyArray_DOUBLE,
+            const_cast<double*>(Pt.data())));
+      }
+    } else if (t == "Np") {
+      dictMap[t] = PyDict_New();
+      npy_intp pDataDim[] = {tsMain.col(0).size()};
+      PyDict_SetItemString(dictMap[t], "t",
+        PyArray_SimpleNewFromData(1, pDataDim, PyArray_DOUBLE,
+          const_cast<double*>(tsMain.col(0).data())));
+      PyDict_SetItemString(dictMap[t], "factor", PyFloat_FromDouble(1));
       PyDict_SetItemString(dictMap[t], "y",
         PyArray_SimpleNewFromData(1, pDataDim, PyArray_DOUBLE,
-          const_cast<double*>(tsMain.col(1).data())));
-    } else if (t == "Bx" || t == "Br") {
-      npy_intp pDataDim[] = {tsMain.col(2).size()};
+          const_cast<double*>(tsMain.col(10).data())));
+    } else if (t == "Tp") {
+      dictMap[t] = PyDict_New();
+      npy_intp pDataDim[] = {tsMain.col(0).size()};
+      PyDict_SetItemString(dictMap[t], "t",
+        PyArray_SimpleNewFromData(1, pDataDim, PyArray_DOUBLE,
+          const_cast<double*>(tsMain.col(0).data())));
+      PyDict_SetItemString(dictMap[t], "factor", PyFloat_FromDouble(1));
       PyDict_SetItemString(dictMap[t], "y",
         PyArray_SimpleNewFromData(1, pDataDim, PyArray_DOUBLE,
-          const_cast<double*>(tsMain.col(2).data())));
-    } else if (t == "By" || t == "Bt") {
-      npy_intp pDataDim[] = {tsMain.col(3).size()};
+          const_cast<double*>(tsMain.col(11).data())));
+    } else if (t == "beta") {
+      dictMap[t] = PyDict_New();
+      npy_intp pDataDim[] = {tsMain.col(0).size()};
+      PyDict_SetItemString(dictMap[t], "t",
+        PyArray_SimpleNewFromData(1, pDataDim, PyArray_DOUBLE,
+          const_cast<double*>(tsMain.col(0).data())));
+      PyDict_SetItemString(dictMap[t], "factor", PyFloat_FromDouble(1));
       PyDict_SetItemString(dictMap[t], "y",
         PyArray_SimpleNewFromData(1, pDataDim, PyArray_DOUBLE,
-          const_cast<double*>(tsMain.col(3).data())));
-    } else if (t == "Bz" || t == "Bn") {
-      npy_intp pDataDim[] = {tsMain.col(4).size()};
-      PyDict_SetItemString(dictMap[t], "y",
+          const_cast<double*>(tsMain.col(13).data())));
+    } else if (t == "thetaB" || t == "phiB") {
+      dictMap[t] = PyDict_New();
+      npy_intp pDataDim[] = {tsMain.col(0).size()};
+      PyDict_SetItemString(dictMap[t], "t",
         PyArray_SimpleNewFromData(1, pDataDim, PyArray_DOUBLE,
-          const_cast<double*>(tsMain.col(4).data())));
+          const_cast<double*>(tsMain.col(0).data())));
+      PyDict_SetItemString(dictMap[t], "factor", PyFloat_FromDouble(1));
+      Eigen::VectorXd Bxy = (tsMain.col(3).array().pow(2)+
+                             tsMain.col(2).array().pow(2)).sqrt().matrix();
+      if (t == "thetaB") {
+        thetaB = Eigen::VectorXd::Zero(tsMain.col(2).size());
+        for (int i = 0; i < tsMain.col(2).size(); i++) {
+          thetaB(i) = atan(tsMain.col(4)(i)/Bxy(i));
+          thetaB(i) = thetaB(i)*180/M_PI;
+        }
+        PyDict_SetItemString(dictMap[t], "y",
+          PyArray_SimpleNewFromData(1, pDataDim, PyArray_DOUBLE,
+            const_cast<double*>(thetaB.data())));
+      } else if (t == "phiB") {
+        phiB = Eigen::VectorXd::Zero(tsMain.col(2).size());
+        for (int i = 0; i < tsMain.col(2).size(); i++) {
+          phiB(i) = atan2(tsMain.col(3)(i), tsMain.col(2)(i));
+          phiB(i) = (phiB(i) < 0 ? phiB(i)+M_PI : phiB(i));
+          phiB(i) = phiB(i)*180/M_PI;
+        }
+        PyDict_SetItemString(dictMap[t], "y",
+          PyArray_SimpleNewFromData(1, pDataDim, PyArray_DOUBLE,
+            const_cast<double*>(phiB.data())));
+      }
     }
   }
-
-  std::cout << "dictionaries created" << std::endl;
 
   std::vector<PyObject*> tupleVec;
   BOOST_FOREACH(const pt::ptree::value_type &child, dataTree.get_child("")) {
@@ -166,14 +283,10 @@ int main(int argc, char* argv[]) {
     }
   }
 
-  std::cout << "tuples created" << std::endl;
-
   pArgs = PyTuple_New(tupleVec.size()); // initialize the arguments tuple
   for (int i = 0; i < tupleVec.size(); i++) {
     PyTuple_SetItem(pArgs, i, tupleVec[i]);
   }
-
-  std::cout << "argument tuple created" << std::endl;
 
   // initialize and call the python function
   func = PyDict_GetItemString(python_dictionary, "plot");
