@@ -26,7 +26,7 @@ BOOST = -lboost_program_options -lboost_regex
 PYTHON = -lpython2.7
 #CXFORM = -lcxform
 #LOG4CPLUS = -llog4cplus
-CXXFLAGS = -O0 -Wl,-rpath,$(LD_LIBRARY_PATH),-rpath-link,$(LD_LIBRARY_PATH) -Wno-write-strings
+CXXFLAGS = -O2 -Wl,-rpath,$(LD_LIBRARY_PATH),-rpath-link,$(LD_LIBRARY_PATH) -Wno-write-strings
 
 all: $(PROGRAM) $(TEST)
 
