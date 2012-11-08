@@ -92,11 +92,13 @@ int main(int argc, char* argv[]) {
   double kb = 1.380648e-23; // J/K
   double mu0 = 1.256637e-6; // N/A^2
 
-  My::Timeseries tsMain, tsPA, tsAE, tsHe, tsQ;
+  My::Timeseries tsMain, tsPA, tsAE, tsQ;
+  My::Timeseries1D tsHe;
   tsMain.readFile("../icme/res/ace_240.dat", "ymdhms").filter(beginTime, endTime);
   tsPA.readFile("../data/ace_epam_240.dat", "ymdhms").filter(beginTime, endTime);
   tsAE.readFile("../data/ae_240.dat", "ymdhms").filter(beginTime, endTime);
   tsHe.readFile("../data/ACE_SWEPAM_Data.txt", "ydhms").filter(beginTime, endTime);
+  tsHe.filter(">=", 0);
   tsQ.readFile("../data/ACE_SWICS_Data.txt", "ydhms").filter(beginTime, endTime);
   My::Timeseries1D tsO7O6(tsQ, 1), tsFe(tsQ, 2);
   tsO7O6.filter(">=", 0);
@@ -129,14 +131,16 @@ int main(int argc, char* argv[]) {
   std::map<std::string,PyObject*> dictMap;
   Eigen::VectorXd Pt, Pb, thetaB, phiB, PAy, PAz;
   BOOST_FOREACH (const std::string& t, tk) {
+    dictMap[t] = PyDict_New();
+    PyDict_SetItemString(dictMap[t], "name", PyString_FromString(t.c_str()));
     if (t == "B" || t == "Bx" || t == "Br" || t == "By" || t == "Bt" ||
         t == "Bz" || t == "Bn") {
-      dictMap[t] = PyDict_New();
       npy_intp pDataDim[] = {tsMain.col(0).size()};
       PyDict_SetItemString(dictMap[t], "t",
         PyArray_SimpleNewFromData(1, pDataDim, PyArray_DOUBLE,
           const_cast<double*>(tsMain.col(0).data())));
       PyDict_SetItemString(dictMap[t], "factor", PyFloat_FromDouble(1));
+      PyDict_SetItemString(dictMap[t], "unit", PyString_FromString("nT"));
       if (t == "B") {
         npy_intp pDataDim[] = {tsMain.col(1).size()};
         PyDict_SetItemString(dictMap[t], "y",
@@ -163,7 +167,6 @@ int main(int argc, char* argv[]) {
       }
     } else if (t == "Vp" || t == "Vx" || t == "Vr" || t == "Vy" || t == "Vt" ||
                t == "Vz" || t == "Vn" || t == "Vth") {
-      dictMap[t] = PyDict_New();
       npy_intp pDataDim[] = {tsMain.col(0).size()};
       PyDict_SetItemString(dictMap[t], "t",
         PyArray_SimpleNewFromData(1, pDataDim, PyArray_DOUBLE,
@@ -199,7 +202,6 @@ int main(int argc, char* argv[]) {
             const_cast<double*>(tsMain.col(12).data())));
       }
     } else if (t == "Pth" || t == "Pt" || t == "Pb") {
-      dictMap[t] = PyDict_New();
       npy_intp pDataDim[] = {tsMain.col(0).size()};
       PyDict_SetItemString(dictMap[t], "t",
         PyArray_SimpleNewFromData(1, pDataDim, PyArray_DOUBLE,
@@ -229,7 +231,6 @@ int main(int argc, char* argv[]) {
         PyDict_SetItemString(dictMap[t], "color", PyString_FromString("blue"));
       }
     } else if (t == "Np") {
-      dictMap[t] = PyDict_New();
       npy_intp pDataDim[] = {tsMain.col(0).size()};
       PyDict_SetItemString(dictMap[t], "t",
         PyArray_SimpleNewFromData(1, pDataDim, PyArray_DOUBLE,
@@ -239,7 +240,6 @@ int main(int argc, char* argv[]) {
         PyArray_SimpleNewFromData(1, pDataDim, PyArray_DOUBLE,
           const_cast<double*>(tsMain.col(10).data())));
     } else if (t == "Tp") {
-      dictMap[t] = PyDict_New();
       npy_intp pDataDim[] = {tsMain.col(0).size()};
       PyDict_SetItemString(dictMap[t], "t",
         PyArray_SimpleNewFromData(1, pDataDim, PyArray_DOUBLE,
@@ -249,7 +249,6 @@ int main(int argc, char* argv[]) {
         PyArray_SimpleNewFromData(1, pDataDim, PyArray_DOUBLE,
           const_cast<double*>(tsMain.col(11).data())));
     } else if (t == "beta") {
-      dictMap[t] = PyDict_New();
       npy_intp pDataDim[] = {tsMain.col(0).size()};
       PyDict_SetItemString(dictMap[t], "t",
         PyArray_SimpleNewFromData(1, pDataDim, PyArray_DOUBLE,
@@ -259,7 +258,6 @@ int main(int argc, char* argv[]) {
         PyArray_SimpleNewFromData(1, pDataDim, PyArray_DOUBLE,
           const_cast<double*>(tsMain.col(13).data())));
     } else if (t == "thetaB" || t == "phiB") {
-      dictMap[t] = PyDict_New();
       npy_intp pDataDim[] = {tsMain.col(0).size()};
       PyDict_SetItemString(dictMap[t], "t",
         PyArray_SimpleNewFromData(1, pDataDim, PyArray_DOUBLE,
@@ -290,7 +288,6 @@ int main(int argc, char* argv[]) {
         PyDict_SetItemString(dictMap[t], "color", PyString_FromString("green"));
       }
     } else if (t == "PA") {
-      dictMap[t] = PyDict_New();
       npy_intp pDataDim[] = {tsPA.col(0).size()};
       PyDict_SetItemString(dictMap[t], "t",
         PyArray_SimpleNewFromData(1, pDataDim, PyArray_DOUBLE,
@@ -312,7 +309,6 @@ int main(int argc, char* argv[]) {
         PyArray_SimpleNewFromData(1, pDataZDim, PyArray_DOUBLE,
           const_cast<double*>(PAz.data())));
     } else if (t == "AE") {
-      dictMap[t] = PyDict_New();
       npy_intp pDataDim[] = {tsAE.col(0).size()};
       PyDict_SetItemString(dictMap[t], "t",
         PyArray_SimpleNewFromData(1, pDataDim, PyArray_DOUBLE,
@@ -322,7 +318,6 @@ int main(int argc, char* argv[]) {
         PyArray_SimpleNewFromData(1, pDataDim, PyArray_DOUBLE,
           const_cast<double*>(tsAE.col(1).data())));
     } else if (t == "He/p") {
-      dictMap[t] = PyDict_New();
       npy_intp pDataDim[] = {tsHe.col(0).size()};
       PyDict_SetItemString(dictMap[t], "t",
         PyArray_SimpleNewFromData(1, pDataDim, PyArray_DOUBLE,
@@ -333,9 +328,7 @@ int main(int argc, char* argv[]) {
           const_cast<double*>(tsHe.col(1).data())));
       PyDict_SetItemString(dictMap[t], "marker", PyString_FromString("+"));
       PyDict_SetItemString(dictMap[t], "color", PyString_FromString("red"));
-      PyDict_SetItemString(dictMap[t], "linestyle", PyString_FromString("--"));
     } else if (t == "O7/O6") {
-      dictMap[t] = PyDict_New();
       npy_intp pDataDim[] = {tsO7O6.col(0).size()};
       PyDict_SetItemString(dictMap[t], "t",
         PyArray_SimpleNewFromData(1, pDataDim, PyArray_DOUBLE,
@@ -344,11 +337,9 @@ int main(int argc, char* argv[]) {
       PyDict_SetItemString(dictMap[t], "y",
         PyArray_SimpleNewFromData(1, pDataDim, PyArray_DOUBLE,
           const_cast<double*>(tsO7O6.col(1).data())));
-      PyDict_SetItemString(dictMap[t], "marker", PyString_FromString("*"));
+      PyDict_SetItemString(dictMap[t], "marker", PyString_FromString("+"));
       PyDict_SetItemString(dictMap[t], "color", PyString_FromString("green"));
-      PyDict_SetItemString(dictMap[t], "linestyle", PyString_FromString("--"));
     } else if (t == "<Q>Fe") {
-      dictMap[t] = PyDict_New();
       npy_intp pDataDim[] = {tsFe.col(0).size()};
       PyDict_SetItemString(dictMap[t], "t",
         PyArray_SimpleNewFromData(1, pDataDim, PyArray_DOUBLE,

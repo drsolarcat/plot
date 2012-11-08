@@ -17,6 +17,7 @@ namespace My {
 namespace My {
   class Timeseries1D : public Timeseries {
     public:
+      Timeseries1D() {}
       Timeseries1D(Timeseries, int);
       Timeseries1D& filter(std::string, double);
   };

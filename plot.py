@@ -13,18 +13,21 @@ from mpl_toolkits.axes_grid import make_axes_locatable
 import  matplotlib.axes as maxes
 from matplotlib.colors import LogNorm
 from matplotlib.dates import AutoDateLocator, AutoDateFormatter
+from matplotlib import rc
 
 # plot in-situ data
 def plot(*arg):
     try:
         matplotlib.rcParams.update({'font.size': 11})
+#        rc('font',**{'family':'sans-serif','sans-serif':['Computer Modern Sans serif']})
+#        rc('text', usetex=True)
 
         major = DayLocator()
         minor = HourLocator()
         majorFormat = DateFormatter('%Y-%m-%d')
 
-        fig = figure(figsize=[8,10])
-        subplots_adjust(hspace=0.001)
+        fig = figure(figsize=[8,11])
+        fig.subplots_adjust(hspace=0.001)
 
         p = 0
         ax1 = []
@@ -60,35 +63,112 @@ def plot(*arg):
                     cb = colorbar(im, cax = cax)
                     cb.locator = MaxNLocator(5)
                     cb.update_ticks()
-                else:
-                    if (len(arg[p]) == 2 and i == 1 and
-                        (max(abs(arg[p][i-1]['y']))/max(abs(arg[p][i]['y'])) > 3 or
-                         max(abs(arg[p][i]['y']))/max(abs(arg[p][i-1]['y'])) > 3)):
-                        axt = ax.twinx()
-                        axt.plot(t, arg[p][i]['y']*arg[p][i]['factor'], **kwargs)
+                    axc = ax
+                    axc.yaxis.set_label_coords(-0.08, 0.5)
+                elif (len(arg[p]) == 2 and i == 1 and
+                    (max(abs(arg[p][i-1]['y']))/max(abs(arg[p][i]['y'])) > 3 or
+                     max(abs(arg[p][i]['y']))/max(abs(arg[p][i-1]['y'])) > 3)):
+                    axt = ax.twinx()
+                    setp(ax.get_xticklabels(), visible=False)
+                    axt.plot(t, arg[p][i]['y']*arg[p][i]['factor'], **kwargs)
+                    if 'color' in arg[p][i]:
                         for tl in axt.get_yticklabels():
-                            tl.set_color(kwargs['color'])
-                        if 'color' in arg[p][i-1]:
-                            for tl in ax.get_yticklabels():
-                                tl.set_color(arg[p][i-1]['color'])
+                            tl.set_color(arg[p][i]['color'])
+                        axt.yaxis.label.set_color(arg[p][i]['color'])
+                    if 'color' in arg[p][i-1]:
+                        for tl in ax.get_yticklabels():
+                            tl.set_color(arg[p][i-1]['color'])
+                        ax.yaxis.label.set_color(arg[p][i-1]['color'])
+                    axc = axt
+                else:
+                    axc = ax
+                    axc.yaxis.set_label_coords(-0.08, 0.5)
+                    if arg[p][i]['name'] == 'beta' or arg[p][i]['name'] == 'Tp':
+                        axc.semilogy(t, arg[p][i]['y']*arg[p][i]['factor'], **kwargs)
                     else:
-                        ax.plot(t, arg[p][i]['y']*arg[p][i]['factor'], **kwargs)
+                        axc.plot(t, arg[p][i]['y']*arg[p][i]['factor'], **kwargs)
+                if (arg[p][i]['name'] == 'Bx' or arg[p][i]['name'] == 'Br' or
+                    arg[p][i]['name'] == 'By' or arg[p][i]['name'] == 'Bt' or
+                    arg[p][i]['name'] == 'Bz' or arg[p][i]['name'] == 'Bn' or
+                    arg[p][i]['name'] == 'B'):
+                    axc.yaxis.set_major_locator(MaxNLocator(nbins=3, symmetric=True))
+                    if (len(arg[p]) == 1):
+                        axc.set_ylabel('$'+arg[p][i]['name']+r"$ $\mathrm{[nT]}$")
+                    else:
+                        axc.set_ylabel(r"$B$ $\mathrm{[nT]}$")
+                elif (arg[p][i]['name'] == 'Vx' or arg[p][i]['name'] == 'Vr' or
+                      arg[p][i]['name'] == 'Vy' or arg[p][i]['name'] == 'Vt' or
+                      arg[p][i]['name'] == 'Vz' or arg[p][i]['name'] == 'Vn' or
+                      arg[p][i]['name'] == 'Vp'):
+                    axc.yaxis.set_major_locator(MaxNLocator(nbins=3, prune='upper'))
+                    if (len(arg[p]) == 1):
+                        if arg[p][i]['name'] == 'Vp':
+                            axc.set_ylabel(r"$V_p$ $\mathrm{[km/s]}$")
+                        else:
+                            axc.set_ylabel('$'+arg[p][i]['name']+r"$ $\mathrm{[km/s]}$")
+                    else:
+                        axc.set_ylabel(r"$V_p$ $\mathrm{[km/s]}$")
+                elif (arg[p][i]['name'] == 'Pth'):
+                    axc.yaxis.set_major_locator(MaxNLocator(nbins=3, steps=[1,2,4], prune='upper'))
+                    axc.set_ylabel(r"$P_{th}$ $\mathrm{[nPa]}$")
+                elif (arg[p][i]['name'] == 'Pt'):
+                    axc.yaxis.set_major_locator(MaxNLocator(nbins=3, steps=[1,2,4], prune='upper'))
+                    axc.set_ylabel(r"$P_{t}$ $\mathrm{[nPa]}$")
+                elif (arg[p][i]['name'] == 'Pb'):
+                    axc.yaxis.set_major_locator(MaxNLocator(nbins=3, steps=[1,2,4], prune='upper'))
+                    axc.set_ylabel(r"$P_{b}$ $\mathrm{[nPa]}$")
+                elif (arg[p][i]['name'] == 'Np'):
+                    axc.yaxis.set_major_locator(MaxNLocator(nbins=3, prune='both'))
+                    axc.set_ylabel(r"$N_p$ $\mathrm{[cm^{-3}]}$")
+                elif (arg[p][i]['name'] == 'Tp'):
+                    axc.yaxis.set_major_locator(FixedLocator(locs=[1e3,1e4,1e5]))
+                    axc.set_ylabel(r"$T_p$ $\mathrm{[K]}$")
+                elif (arg[p][i]['name'] == 'Vth'):
+                    axc.yaxis.set_major_locator(MaxNLocator(nbins=3, prune='both'))
+                    axc.set_ylabel(r"$V_{th}$ $\mathrm{[km/s]}$")
+                elif (arg[p][i]['name'] == 'beta'):
+                    axc.yaxis.set_major_locator(FixedLocator(locs=[1e0,1e1]))
+                    axc.set_ylabel('$\\beta$')
+                elif (arg[p][i]['name'] == 'AE'):
+                    axc.yaxis.set_major_locator(MaxNLocator(nbins=3, prune='both'))
+                    axc.set_ylabel(r"$AE$ $\mathrm{[nT]}$")
+                elif (arg[p][i]['name'] == 'thetaB'):
+                    axc.yaxis.set_major_locator(FixedLocator(locs=[-90,-45,0,45]))
+                    ylim([-90,90])
+                    axc.set_ylabel('$\\theta_B$')
+                elif (arg[p][i]['name'] == 'phiB'):
+                    axc.yaxis.set_major_locator(FixedLocator(locs=[0,45,90,135]))
+                    ylim([0,180])
+                    axc.set_ylabel('$\\phi_B$')
+                elif (arg[p][i]['name'] == 'PA'):
+                    axc.yaxis.set_major_locator(FixedLocator(locs=[45,90,135]))
+                    axc.set_ylabel('$PA$')
+                elif (arg[p][i]['name'] == 'He/p'):
+                    axc.yaxis.set_major_locator(MaxNLocator(nbins=3, prune='both'))
+                    axc.set_ylabel('$He/p$')
+                elif (arg[p][i]['name'] == 'O7/O6'):
+                    axc.yaxis.set_major_locator(MaxNLocator(nbins=3, prune='both'))
+                    axc.set_ylabel('$O7/O6$')
+                elif (arg[p][i]['name'] == '<Q>Fe'):
+                    axc.yaxis.set_major_locator(MaxNLocator(nbins=3, prune='both'))
+                    axc.set_ylabel('$<Q>Fe$')
+                else:
+                    axc.yaxis.set_major_locator(MaxNLocator(nbins=3, prune='both'))
+                    axc.set_ylabel('$'+arg[p][i]['name']+'$')
                 i = i+1
             p = p+1
-            ax.xaxis.set_major_locator(major)
-            ax.xaxis.set_major_formatter(majorFormat)
-            ax.xaxis.set_minor_locator(minor)
-            ax.yaxis.set_label_coords(-0.08, 0.5)
+            axc.xaxis.set_major_locator(major)
+            axc.xaxis.set_major_formatter(majorFormat)
+            axc.xaxis.set_minor_locator(minor)
             if p == 1:
-                ax1 = ax
+                ax1 = axc
             elif not ('z' in arg[p-1][0]):
-                ax.set_xlim(ax1.get_xlim())
+                axc.set_xlim(ax1.get_xlim())
             if p < len(arg):
-                setp(ax.get_xticklabels(), visible=False)
+                setp(axc.get_xticklabels(), visible=False)
         show()
     except:
         print "Trigger Exception, traceback info forward to log file."
-        print data[len(data)-1]
         traceback.print_exc(file = open("./errlog.txt","a"))
         sys.exit(1)
 
